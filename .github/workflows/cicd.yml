@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Medplus App
+name: CI/CD Pipeline - Mediplus App
 
 on:
   push:
@@ -24,22 +24,23 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, Tag, and Push Docker Image
-        run: |
-          # Use GitHub run number as unique tag
-          IMAGE_TAG=v${GITHUB_RUN_NUMBER}
-          IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/mediplus:$IMAGE_TAG
+  run: |
+    # Use GitHub run number as unique tag
+    IMAGE_TAG=v${GITHUB_RUN_NUMBER}
+    IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/mediplus:$IMAGE_TAG
 
-          echo "Building Docker image: $IMAGE_URI"
-          docker build -t mediplus:$IMAGE_TAG .
+    echo "Building Docker image: $IMAGE_URI"
+    docker build -t mediplus:$IMAGE_TAG .
 
-          echo "Tagging as latest as well"
-          docker tag mediplus:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/mediplus:latest
+    echo "Tagging as latest as well"
+    docker tag mediplus:$IMAGE_TAG $IMAGE_URI
+    docker tag mediplus:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/mediplus:latest
 
-          echo "Pushing unique tag to ECR"
-          docker push $IMAGE_URI
+    echo "Pushing unique tag to ECR"
+    docker push $IMAGE_URI
 
-          echo "Pushing latest tag to ECR"
-          docker push ${{ steps.login-ecr.outputs.registry }}/mediplus:latest
+    echo "Pushing latest tag to ECR"
+    docker push ${{ steps.login-ecr.outputs.registry }}/mediplus:latest
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
