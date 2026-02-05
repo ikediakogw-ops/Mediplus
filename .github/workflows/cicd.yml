@@ -1,61 +1,52 @@
-name: CI/CD Pipeline - Mediplus App
+name: Build and Push to ECR
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  build_and_deploy:
+  build-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 201385813146.dkr.ecr.eu-north-1.amazonaws.com
 
-      - name: Build, Tag, and Push Docker Image
-  run: |
-    # Use GitHub run number as unique tag
-    IMAGE_TAG=v${GITHUB_RUN_NUMBER}
-    IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/mediplus:$IMAGE_TAG
-
-    echo "Building Docker image: $IMAGE_URI"
-    docker build -t mediplus:$IMAGE_TAG .
-
-    echo "Tagging as latest as well"
-    docker tag mediplus:$IMAGE_TAG $IMAGE_URI
-    docker tag mediplus:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/mediplus:latest
-
-    echo "Pushing unique tag to ECR"
-    docker push $IMAGE_URI
-
-    echo "Pushing latest tag to ECR"
-    docker push ${{ steps.login-ecr.outputs.registry }}/mediplus:latest
+      - name: Build, tag, and push image to Amazon ECR
+        run: |
+          docker build -t mediplus:v1 .
+          docker tag mediplus:v1 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
+          docker push 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
 
       - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.10.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
-            echo "Logging in to ECR..."
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
-
-            echo "Deploying Mediplus..."
-            docker pull ${{ steps.login-ecr.outputs.registry }}/mediplus:v${GITHUB_RUN_NUMBER}
-
+            # Log in to ECR on the EC2 instance
+            aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 201385813146.dkr.ecr.eu-north-1.amazonaws.com
+            
+            # Pull the new image
+            docker pull 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
+            
+            # Stop and remove existing container (ignore errors if it doesn't exist)
             docker stop mediplus-container || true
             docker rm mediplus-container || true
-
-            docker run -d -p 80:80 --name mediplus-container ${{ steps.login-ecr.outputs.registry }}/mediplus:v${GITHUB_RUN_NUMBER}
+            
+            # Run the new container
+            docker run -d -p 80:80 --name mediplus-container 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
