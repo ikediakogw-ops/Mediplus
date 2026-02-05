@@ -31,11 +31,11 @@ jobs:
           docker push 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
 
       - name: Deploy to EC2 via SSH
-  uses: appleboy/ssh-action@v0.1.9   # <-- fix version here
+  uses: appleboy/ssh-action@v0.1.9
   with:
     host: ${{ secrets.EC2_HOST }}
     username: ${{ secrets.EC2_USER }}
-    key: ${{ secrets.SSH_PRIVATE_KEY }}
+    key: ${{ secrets.SSH_KEY }}
     port: 22
     script: |
       aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 201385813146.dkr.ecr.eu-north-1.amazonaws.com
