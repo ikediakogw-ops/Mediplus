@@ -1,7 +1,5 @@
 name: CI/CD Pipeline - Medplus App
 
-name: Build and Deploy to EC2
-
 on:
   push:
     branches:
