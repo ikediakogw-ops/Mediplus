@@ -30,16 +30,16 @@ jobs:
           docker tag mediplus:v1 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
           docker push 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
 
-  #     - name: Deploy to EC2 via SSH
-  # uses: appleboy/ssh-action@v0.1.9
-  # with:
-  #   host: ${{ secrets.EC2_HOST }}
-  #   username: ${{ secrets.EC2_USER }}
-  #   key: ${{ secrets.SSH_KEY }}
-  #   port: 22
-  #   script: |
-  #     aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 201385813146.dkr.ecr.eu-north-1.amazonaws.com
-  #     docker pull 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
-  #     docker stop mediplus-container || true
-  #     docker rm mediplus-container || true
-  #     docker run -d -p 80:80 --name mediplus-container 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
+      - name: Deploy to EC2 via SSH
+  uses: appleboy/ssh-action@v0.1.9
+  with:
+    host: ${{ secrets.EC2_HOST }}
+    username: ${{ secrets.EC2_USER }}
+    key: ${{ secrets.SSH_KEY }}
+    port: 22
+    script: |
+      aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 201385813146.dkr.ecr.eu-north-1.amazonaws.com
+      docker pull 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
+      docker stop mediplus-container || true
+      docker rm mediplus-container || true
+      docker run -d -p 80:80 --name mediplus-container 201385813146.dkr.ecr.eu-north-1.amazonaws.com/mediplus:v1
