@@ -1,50 +1,50 @@
-name: Build and Deploy to EC2
+# name: Build and Deploy to EC2
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  build_and_deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   build_and_deploy:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: eu-north-1
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+#       - name: Login to Amazon ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Docker image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: v1
-        run: |
-          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#       - name: Build, tag, and push Docker image
+#         env:
+#           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+#           IMAGE_TAG: v1
+#         run: |
+#           docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+#           docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      uses: appleboy/ssh-action@v1.0.3
-with:
-  host: ${{ secrets.EC2_HOST }}
-  username: ${{ secrets.EC2_USER }}
-  password: ${{ secrets.EC2_PASSWORD }}  # or token-based auth
-  script: |
-    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-    docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-    docker stop mediplus-container || true
-    docker rm mediplus-container || true
-    docker run -d -p 80:80 --name mediplus-container $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#       uses: appleboy/ssh-action@v1.0.3
+# with:
+#   host: ${{ secrets.EC2_HOST }}
+#   username: ${{ secrets.EC2_USER }}
+#   password: ${{ secrets.EC2_PASSWORD }}  # or token-based auth
+#   script: |
+#     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+#     docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#     docker stop mediplus-container || true
+#     docker rm mediplus-container || true
+#     docker run -d -p 80:80 --name mediplus-container $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
 
 
