@@ -35,30 +35,33 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: v1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            aws ecr get-login-password --region eu-north-1 \
-              | docker login --username AWS --password-stdin $ECR_REGISTRY
+  uses: appleboy/ssh-action@v1.0.3
+  env:
+    ECR_REGISTRY: 201385813146.dkr.ecr.eu-north-1.amazonaws.com
+    ECR_REPOSITORY: mediplus
+    IMAGE_TAG: v1
+  with:
+    host: ${{ secrets.EC2_HOST }}
+    username: ${{ secrets.EC2_USER }}
+    key: ${{ secrets.SSH_KEY }}
+    envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG
+    script: |
+      echo "Registry: $ECR_REGISTRY"
+      echo "Repository: $ECR_REPOSITORY"
+      echo "Tag: $IMAGE_TAG"
 
-            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      aws ecr get-login-password --region eu-north-1 \
+        | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-            docker stop mediplus-container || true
-            docker rm mediplus-container || true
+      docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-            docker run -d \
-              -p 80:80 \
-              --name mediplus-container \
-              $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      docker stop mediplus-container || true
+      docker rm mediplus-container || true
 
-
+      docker run -d \
+        -p 80:80 \
+        --name mediplus-container \
+        $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
 
   # update-k8s-yaml:
